@@ -17,7 +17,7 @@
 #include "Includes/obfuscate.h"
 #include "Includes/Utils.h"
 #include "KittyMemory/MemoryPatch.h"
-#include "includes/Dobby/dobby.h"
+#include "Includes/Dobby/dobby.h"
 #include "Color.h"
 #include "Includes/Macros.h"
 #include "imgui.h"
@@ -27,12 +27,11 @@
 #include "UI/Debug.h"
 #include "il2cpp/Il2Cpp.h"
 #include "Dump/NepDumper.h"
-#include "Dump/Chams.h"
+#include "Dump/chams.h"
 #include "Structs/include.h"
 #include "Editor/Editor.h"
 #include "UI/UI.h"
 #include "ImGui/stuff.h"
-#include "loginUtils/json.hpp"
 
 
 DUMPER::Dumper *d;

@@ -5,5 +5,7 @@ local.properties
 *.iml
 .idea/
 app/build/
+app/.cxx/
+app/.externalNativeBuild/
 app/src/main/obj/
 .DS_Store

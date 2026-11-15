@@ -221,7 +221,7 @@ namespace CHAMS_SCANNER {
             LOGE("Cannot load symbol 'glDrawElements': %s", dlsym_error);
             return;
         } else {
-            MSHookFunction((void *)p_glDrawElements, (void *)new_glDrawElements, (void **)&old_glDrawElements);
+            hook((void *)p_glDrawElements, (void *)new_glDrawElements, (void **)&old_glDrawElements);
         }
     }
     

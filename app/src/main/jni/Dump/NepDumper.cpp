@@ -15,8 +15,6 @@
 #include <string>
 #include <vector>
 #include <sys/stat.h>
-#include <loginUtils/json.hpp>
-using json = nlohmann::json;
 
 static void *il2cpp_handle = nullptr;
 static uint64_t il2cpp_base = 0;

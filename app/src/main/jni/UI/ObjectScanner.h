@@ -168,9 +168,9 @@ namespace OBJECT_SCANNER {
     
     void *scan_thread(void *) {
         auto offset = IL2Cpp::Il2CppGetMethodOffset("UnityEngine.CoreModule.dll", "UnityEngine", "Component", "get_transform", 0);
-        MSHookFunction((void *)offset, (void *)Scanner, (void **)&Scanner_Get_Object);
+        hook((void *)offset, (void *)Scanner, (void **)&Scanner_Get_Object);
         auto destroy = IL2Cpp::Il2CppGetMethodOffset("UnityEngine.CoreModule.dll", "UnityEngine", "Object", "Destroy", 1);
-        MSHookFunction((void *)destroy, (void *)Remove, (void **)&Remove_Object);
+        hook((void *)destroy, (void *)Remove, (void **)&Remove_Object);
         
         pthread_exit(nullptr);
         
