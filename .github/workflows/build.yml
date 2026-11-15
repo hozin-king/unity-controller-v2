@@ -7,6 +7,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,3 +30,27 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug --stacktrace
+
+      # Auto-release: tiap push ke main yang build-nya sukses, APK dirilis
+      # otomatis. Tag v<versionName> dibuat bila belum ada; bila tag/rilis
+      # sudah ada, aset APK-nya diperbarui (clobber) — tanpa langkah manual.
+      # Tanpa actions/upload-artifact (kuota storage Actions penuh).
+      - name: Create tag + GitHub Release
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=$(grep -oP 'versionName\s*=\s*"\K[^"]+' app/build.gradle.kts)
+          if [ -z "$VERSION" ]; then echo "versionName tidak ditemukan di app/build.gradle.kts"; exit 1; fi
+          TAG="v$VERSION"
+          APK=$(ls app/build/outputs/apk/debug/*.apk | head -n 1)
+          cp "$APK" "UnityControllerInjector-$VERSION.apk"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "tag $TAG sudah ada — perbarui aset APK"
+            gh release upload "$TAG" "UnityControllerInjector-$VERSION.apk" --clobber
+          else
+            echo "buat tag + rilis $TAG"
+            gh release create "$TAG" "UnityControllerInjector-$VERSION.apk" \
+              --title "Unity Controller Injector $VERSION" \
+              --notes "Root injector generik buat game Unity (arm64, perlu root). Menu ImGui generik — tanpa target game spesifik. APK debug."
+          fi
