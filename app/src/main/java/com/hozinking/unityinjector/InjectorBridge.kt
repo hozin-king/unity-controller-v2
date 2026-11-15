@@ -30,6 +30,14 @@ object InjectorBridge {
 
     fun readPayloadStatus(): RootShell.Result = RootShell.exec("cat $STATUS_PATH")
 
+    /** Raw `id` output from inside the root shell (e.g. "uid=0(root) ..."). */
+    fun checkRoot(): RootShell.Result = RootShell.exec("id")
+
+    fun isRootAvailable(): Boolean {
+        val r = checkRoot()
+        return r.exitCode == 0 && r.output.contains("uid=0")
+    }
+
     fun injectorPath(context: Context): String =
         File(context.applicationInfo.nativeLibraryDir, INJECTOR_LIB).absolutePath
 
@@ -106,8 +114,14 @@ object InjectorBridge {
         return if (r.exitCode == 0) "am start -n $component" else null
     }
 
+    fun injectCommand(context: Context, pid: Int): String =
+        "${injectorPath(context)} $pid ${payloadPath(context)} 2>&1"
+
     fun inject(context: Context, pid: Int): RootShell.Result {
         ensureExecutable(context)
-        return RootShell.exec("${injectorPath(context)} $pid ${payloadPath(context)}")
+        // 2>&1: the binary reports its failures on stderr, which the su
+        // shell would otherwise swallow — that is how v1.0.1 failed 4x
+        // with exit=1 and completely empty output (undiagnosable).
+        return RootShell.exec(injectCommand(context, pid))
     }
 }

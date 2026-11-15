@@ -31,8 +31,13 @@ class MainActivity : AppCompatActivity() {
 
         binding.btnCheckRoot.setOnClickListener {
             Thread {
-                val available = RootShell.isRootAvailable()
-                log(if (available) "root: available" else "root: NOT available")
+                val r = InjectorBridge.checkRoot()
+                log("root check: exit=${r.exitCode} output=${r.output}")
+                if (r.exitCode == 0 && r.output.contains("uid=0")) {
+                    log("root: OK (uid=0)")
+                } else {
+                    log("Root ditolak — buka aplikasi KernelSU/Magisk, izinkan root untuk Unity Controller Injector, lalu coba lagi")
+                }
             }.start()
         }
 
@@ -100,23 +105,50 @@ class MainActivity : AppCompatActivity() {
                 }
                 log("libil2cpp.so sudah ke-load — inject...")
 
+                // 2b. Verify root is actually granted before inject: after
+                // an uninstall/reinstall the root-manager grant is lost and
+                // `su` can fail silently — v1.0.1 failed 4x with exit=1 and
+                // empty output, payload never loaded.
+                log("cek root...")
+                val rootCheck = InjectorBridge.checkRoot()
+                if (rootCheck.exitCode != 0 || !rootCheck.output.contains("uid=0")) {
+                    log("root check: exit=${rootCheck.exitCode} output=${rootCheck.output}")
+                    log("Root ditolak — buka aplikasi KernelSU/Magisk, izinkan root untuk Unity Controller Injector, lalu coba lagi")
+                    return@Thread
+                }
+                log("root OK: ${rootCheck.output.trim()}")
+
                 // 3. Inject seperti biasa.
                 if (!InjectorBridge.resetPayloadStatus()) {
                     log("warning: payload status file could not be created — stage diagnostics will be missing")
                 }
+                log("jalankan (via su): ${InjectorBridge.injectCommand(this, pid)}")
                 val result = InjectorBridge.inject(this, pid)
                 log("injector exit=${result.exitCode} output=${result.output}")
-                if (result.exitCode == 0) {
-                    // 4. Bawa game ke depan supaya logo floating langsung
-                    // kelihatan di dalam game.
-                    InjectorBridge.bringGameToFront(this, target)
-                    log("game dibawa ke depan — logo floating muncul di dalam game")
-                    // Payload init takes ~10-30s (libil2cpp wait + attach);
-                    // auto-read the stage log so the last reached stage is
-                    // visible without another tap.
-                    Thread.sleep(15000)
-                    showPayloadStatus("auto (15s after inject)")
+                if (result.exitCode != 0) {
+                    // Jangan lanjut ke auto-read status: payload tidak pernah
+                    // ke-load, jadi stage log-nya pasti kosong. Diagnosis
+                    // dari bukti yang ada (stderr + hasil cek root).
+                    val cause = when {
+                        !InjectorBridge.isRootAvailable() ->
+                            "root ditolak (cek KernelSU/Magisk)"
+                        result.output.contains("No such file", ignoreCase = true) ->
+                            "binary/payload tidak ditemukan — ketuk Show paths dan cek"
+                        else ->
+                            "binary injector gagal — lihat output di atas"
+                    }
+                    log("inject GAGAL: $cause — status payload tidak dibaca (payload tidak pernah ke-load)")
+                    return@Thread
                 }
+                // 4. Bawa game ke depan supaya logo floating langsung
+                // kelihatan di dalam game.
+                InjectorBridge.bringGameToFront(this, target)
+                log("game dibawa ke depan — logo floating muncul di dalam game")
+                // Payload init takes ~10-30s (libil2cpp wait + attach);
+                // auto-read the stage log so the last reached stage is
+                // visible without another tap.
+                Thread.sleep(15000)
+                showPayloadStatus("auto (15s after inject)")
             }.start()
         }
 
