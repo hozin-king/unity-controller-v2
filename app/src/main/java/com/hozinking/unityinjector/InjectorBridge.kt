@@ -14,6 +14,21 @@ object InjectorBridge {
     private const val INJECTOR_LIB = "libinjector.so"
     private const val PAYLOAD_LIB = "libHarshitController.so"
 
+    /** Stage log written by the payload thread inside the game process. */
+    const val STATUS_PATH = "/data/local/tmp/unityinjector_status.txt"
+
+    /**
+     * The game process runs as its own UID and cannot create files under
+     * /data/local/tmp, so (re)create the status file as root before every
+     * inject — otherwise the payload's stage writes would silently fail.
+     */
+    fun resetPayloadStatus(): Boolean {
+        val r = RootShell.exec("rm -f $STATUS_PATH; touch $STATUS_PATH; chmod 666 $STATUS_PATH")
+        return r.exitCode == 0
+    }
+
+    fun readPayloadStatus(): RootShell.Result = RootShell.exec("cat $STATUS_PATH")
+
     fun injectorPath(context: Context): String =
         File(context.applicationInfo.nativeLibraryDir, INJECTOR_LIB).absolutePath
 

@@ -28,6 +28,13 @@ namespace ImGui {
 
     EGLBoolean (*old_eglSwapBuffers)(EGLDisplay dpy, EGLSurface surface);
     EGLBoolean hook_eglSwapBuffers(EGLDisplay dpy, EGLSurface surface) {
+        // First call proves the hook is live; written before any Unity or
+        // menu call so a crash below still leaves this stage in the log.
+        static bool first_frame_logged = false;
+        if (!first_frame_logged) {
+            first_frame_logged = true;
+            StatusLog::write("first_frame");
+        }
         Structs::Display *d = Structs::Display::get_main();
         
         glWidth = d->get_renderingWidth();;//Structs::Screen::get_width();

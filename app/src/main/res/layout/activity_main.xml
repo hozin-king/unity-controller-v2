@@ -58,6 +58,12 @@
             android:text="Inject" />
     </LinearLayout>
 
+    <Button
+        android:id="@+id/btnCheckStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Cek status payload" />
+
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
